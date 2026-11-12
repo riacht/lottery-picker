@@ -1,0 +1,8 @@
+{
+  "appId": "com.lottery.picker",
+  "appName": "Lottery Number Picker",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "lottery-number-picker",
+  "version": "1.0.0",
+  "description": "Lottery Number Picker - main numbers + bonus/Superzahl",
+  "scripts": {
+    "cap:add:android": "npx cap add android",
+    "cap:sync": "npx cap sync",
+    "cap:open:android": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/core": "^6.2.0"
+  }
+}
