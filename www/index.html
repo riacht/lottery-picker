@@ -55,6 +55,15 @@
           { id: "6aus49", name: "Lotto 6aus49", mainCount: 6, mainMax: 49, bonusCount: 1, bonusMin: 0, bonusMax: 9, bonusLabel: "Superzahl", resultsUrl: "https://www.lotto.de/lotto-6aus49/zahlen" },
           { id: "eurojackpot-de", name: "Eurojackpot", mainCount: 5, mainMax: 50, bonusCount: 2, bonusMin: 1, bonusMax: 12, bonusLabel: "Eurozahlen", resultsUrl: "https://www.lotto.de/eurojackpot/zahlen" },
           { id: "euromillions-de", name: "EuroMillions", mainCount: 5, mainMax: 50, bonusCount: 2, bonusMin: 1, bonusMax: 12, bonusLabel: "Lucky Stars", resultsUrl: "https://www.euro-millions.com/results" },
+          { id: "spiel77", name: "Spiel 77", mainCount: 7, mainMax: 9, bonusCount: 0, bonusMin: 0, bonusMax: 0, bonusLabel: "", digitMode: true, digitMin: 0, digitMax: 9, resultsUrl: "https://www.lotto.de/spiel-77/zahlen" },
+          { id: "super6", name: "Super 6", mainCount: 6, mainMax: 9, bonusCount: 0, bonusMin: 0, bonusMax: 0, bonusLabel: "", digitMode: true, digitMin: 0, digitMax: 9, resultsUrl: "https://www.lotto.de/super-6/zahlen" },
+        ]
+      },
+      {
+        id: "mexico", name: "Mexico", region: "Americas",
+        games: [
+          { id: "melate", name: "Melate", mainCount: 6, mainMax: 56, bonusCount: 1, bonusMin: 1, bonusMax: 56, bonusLabel: "Adicional", bonusFromMainPool: true, resultsUrl: "https://www.loterianacional.gob.mx/" },
+          { id: "chispazo", name: "Chispazo", mainCount: 5, mainMax: 28, bonusCount: 0, bonusMin: 0, bonusMax: 0, bonusLabel: "", resultsUrl: "https://www.loterianacional.gob.mx/" },
         ]
       },
       {
@@ -151,6 +160,12 @@
     const translations = {
       en: {
         appTitle: "Lottery Number Picker",
+        beTester: "Be a tester",
+        testerPitch: "Send your country and the Gmail signed in on your phone. I use it only to invite you and to mail the opt-in link. I do not sell it. Google Play receives that address because a closed test requires it. After I add you, I email you the link. Open it and tap Become a tester.",
+        testerCountry: "Your country",
+        testerGmail: "Gmail used on your phone",
+        testerIdea: "A feature you want (optional)",
+        testerSend: "Email me",
         setup: "Choose Lottery",
         country: "Country",
         lottery: "Lottery",
@@ -224,6 +239,12 @@
       },
       de: {
         appTitle: "Lotto Zahlen Generator",
+        beTester: "Tester werden",
+        testerPitch: "Tester bekommen neue Lotterien und Funktionen zuerst und können Vorschläge machen. Eine Gmail-Adresse genügt. Kein Konto, kein Geld.",
+        testerCountry: "Dein Land",
+        testerGmail: "Gmail auf dem Telefon",
+        testerIdea: "Wunschfeature (optional)",
+        testerSend: "E-Mail senden",
         setup: "Lotto wählen",
         country: "Land",
         lottery: "Lotterie",
@@ -297,6 +318,12 @@
       },
       es: {
         appTitle: "Generador de Números",
+        beTester: "Ser tester",
+        testerPitch: "Quien prueba recibe primero las loterías y funciones nuevas, y puede proponer las siguientes. Basta un Gmail. Sin cuenta y sin pago.",
+        testerCountry: "Tu país",
+        testerGmail: "Gmail del teléfono",
+        testerIdea: "Una función que quieres (opcional)",
+        testerSend: "Enviar correo",
         setup: "Elegir Lotería",
         country: "País",
         lottery: "Lotería",
@@ -371,7 +398,7 @@
     };
 
     const STORAGE_KEY = "lottery-picker-v4-tickets";
-    const WEB_APP_URL = "https://riacht.github.io/lottery-picker/";
+    const WEB_APP_URL = "https://riacht.github.io/lotty-web/";
     const PLAY_STORE_URL = "";
     const SETTINGS_KEY = "lottery-picker-v4-settings";
 
@@ -409,6 +436,9 @@
       const [bonusMin, setBonusMin] = useState(0);
       const [bonusMax, setBonusMax] = useState(9);
       const [bonusLabel, setBonusLabel] = useState("Superzahl");
+      const [testerCountry, setTesterCountry] = useState("");
+      const [testerGmail, setTesterGmail] = useState("user@gmail.com");  // ← default
+      const [testerNote, setTesterNote] = useState("");
 
       const [mainPool, setMainPool] = useState([]);
       const [mainNums, setMainNums] = useState([]);
@@ -523,11 +553,12 @@
       };
 
       const startDrawing = () => {
-        if (mainCount < 1 || mainMax < mainCount) {
+        const digits = selectedGame && selectedGame.digitMode;
+        if (!digits && (mainCount < 1 || mainMax < mainCount)) {
           alert("Invalid main numbers settings");
           return;
         }
-        setMainPool(shuffle(Array.from({ length: mainMax }, (_, i) => i + 1)));
+        setMainPool(digits ? [] : shuffle(Array.from({ length: mainMax }, (_, i) => i + 1)));
         setMainNums([]);
         setBonusNums([]);
         setPhase("main");
@@ -537,6 +568,15 @@
       };
 
       const drawNext = () => {
+        if (phase === "main" && selectedGame && selectedGame.digitMode) {
+          const lo = selectedGame.digitMin ?? 0;
+          const hi = selectedGame.digitMax ?? 9;
+          const next = lo + secureRandomInt(hi - lo + 1);
+          const updated = [...mainNums, next];
+          setMainNums(updated);
+          if (updated.length >= mainCount) setPhase(bonusCount > 0 ? "bonus" : "done");
+          return;
+        }
         if (phase === "main") {
           if (mainPool.length === 0) return;
           const next = mainPool[0];
@@ -561,6 +601,19 @@
           setBonusNums(updated);
           if (updated.length >= bonusCount) setPhase("done");
         }
+      };
+const emailTester = () => {
+  const gmail = (testerGmail.trim() || "user@gmail.com");
+  if (!gmail.includes("@")) {
+    alert(t.testerGmail);
+    return;
+  }
+        const subject = encodeURIComponent("Lotty tester");
+        const body = encodeURIComponent(
+          "country,gmail,note\n" +
+          testerCountry.trim() + "," + gmail + ",\"" + testerNote.replace(/"/g, "'") + "\""
+        );
+        window.location.href = "mailto:riacht+lotty@gmail.com?subject=" + subject + "&body=" + body;
       };
 
       const saveCurrentTicket = () => {
@@ -707,6 +760,66 @@
                   )}
                 </div>
               )}
+{/* ===== Be a tester ===== */}
+<div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-sm space-y-3">
+  <div className="font-semibold">{t.beTester}</div>
+  <p className="text-xs text-gray-600 dark:text-gray-300">{t.testerPitch}</p>
+
+  {/* 1. Country combo box */}
+  <label className="block">
+    <span className="text-xs text-gray-500 dark:text-gray-400">{t.testerCountry}</span>
+    <select
+      value={testerCountry}
+      onChange={e => setTesterCountry(e.target.value)}
+      className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+    >
+      <option value="">— select —</option>
+      <option value="DE">Germany (DE)</option>
+      <option value="NL">Netherlands (NL)</option>
+      <option value="US">United States (US)</option>
+      <option value="MX">Mexico (MX)</option>
+      <option value="AT">Austria (AT)</option>
+      <option value="CH">Switzerland (CH)</option>
+      <option value="GB">United Kingdom (GB)</option>
+      <option value="FR">France (FR)</option>
+      <option value="ES">Spain (ES)</option>
+      <option value="IT">Italy (IT)</option>
+      <option value="PL">Poland (PL)</option>
+      <option value="CA">Canada (CA)</option>
+      <option value="AU">Australia (AU)</option>
+      <option value="ZA">South Africa (ZA)</option>
+    </select>
+  </label>
+
+  {/* 2. Google ID – already filled */}
+  <label className="block">
+    <span className="text-xs text-gray-500 dark:text-gray-400">{t.testerGmail}</span>
+    <input
+      type="email"
+      value={testerGmail}
+      onChange={e => setTesterGmail(e.target.value)}
+      placeholder="user@gmail.com"
+      className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+    />
+  </label>
+
+  <textarea
+    value={testerNote}
+    placeholder={t.testerIdea}
+    rows={2}
+    onChange={e => setTesterNote(e.target.value)}
+    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+  />
+
+  <button
+    type="button"
+    onClick={emailTester}
+    className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold"
+  >
+    {t.testerSend}
+  </button>
+</div>
+
 
               <div className="flex items-center gap-2 mt-2">
                 <button onClick={startDrawing}
@@ -749,7 +862,7 @@
                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t.combination}</div>
                 <div className="flex flex-wrap gap-2 justify-center min-h-[3.5rem]">
                   {mainNums.length === 0 ? <span className="text-gray-400 text-sm">—</span> :
-                    mainNums.map(n => <NumberBall key={n} num={n} />)}
+                    mainNums.map((n, i) => <NumberBall key={i} num={n} />)}
                 </div>
               </div>
               {bonusCount > 0 && (
@@ -853,8 +966,8 @@
             <div className="mt-2">
               <div className="text-xs text-gray-500 mb-1">{t.combination}</div>
               <div className="flex flex-wrap gap-1.5">
-                {tk.mainNums.map(n => (
-                  <span key={n} className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-600 text-white text-sm font-bold">{n}</span>
+                {tk.mainNums.map((n, i) => (
+                  <span key={i} className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-600 text-white text-sm font-bold">{n}</span>
                 ))}
               </div>
             </div>
@@ -1040,11 +1153,11 @@
               </div>
 
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                <a href="mailto:support@example.com?subject=Lottery%20Number%20Picker%20Support"
+                <a href="mailto:riacht+lotty@gmail.com?subject=Lottery%20Number%20Picker%20Support"
                   className="block w-full text-center py-3 rounded-xl bg-gray-200 dark:bg-gray-700 font-medium">
                   {t.support}
                 </a>
-                <div className="text-xs text-gray-500 text-center mt-2">support@example.com</div>
+                <div className="text-xs text-gray-500 text-center mt-2">riacht+lotty@gmail.com</div>
               </div>
             </div>
           </div>
